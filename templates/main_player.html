@@ -1,0 +1,20 @@
+{% extends "layouts/module_admin.html" %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="Player">Player</a></li>
+{% endblock %}
+{% block module %}
+<form  method="POST">
+        <!-- Поля формы -->
+        {{ form.hidden_tag() }}
+        <div class="mb-3">
+            {{ form.command.label(class="form-label") }}
+            {{ form.command(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.propertyMinLevel.label(class="form-label") }}
+            {{ form.propertyMinLevel(class="form-control") }}
+        </div>
+        <button type="submit" class="btn btn-primary">Submit</button>
+</form>
+{% endblock %}
