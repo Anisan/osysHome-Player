@@ -1,7 +1,7 @@
 import os
 import vlc
 import subprocess
-from flask import render_template
+import time
 from app.core.main.BasePlugin import BasePlugin
 import queue
 from plugins.Player.forms.SettingForms import SettingsForm
@@ -22,7 +22,7 @@ class Player(BasePlugin):
         self.queue = queue.Queue()
         # Инициализация плеера VLC
         self.player = vlc.MediaPlayer()
-    
+
     def admin(self, request):
         settings = SettingsForm()
         if request.method == 'GET':
@@ -37,7 +37,7 @@ class Player(BasePlugin):
             "form": settings,
         }
         return self.render('main_player.html', content)
-    
+
     def playSound(self, file_name:str, level:int=0):
         propertyMinLevel = self.config.get('propertyMinLevel','')
         minLevel = 0
@@ -46,7 +46,7 @@ class Player(BasePlugin):
             if value:
                 minLevel = int(value)
         if level < minLevel:
-            return 
+            return
         self.queue.put(file_name)
         cmnd = self.config.get('command','')
         if not self.is_playing:
@@ -62,32 +62,35 @@ class Player(BasePlugin):
 
         app_dir = self._app.config["APP_DIR"]
         file_path = self.queue.get()
-        full_path=os.path.join(app_dir,file_path)
-        self.logger.debug("Start play "+full_path)
-        
+        full_path = os.path.join(app_dir,file_path)
+        self.logger.debug("Start play " + full_path)
+
         # media object
         media = vlc.Media(full_path)
- 
+        media.parse()
+        duration = media.get_duration()
+        if duration <= 0:
+            duration = 1000
+        self.logger.debug("Duration " + str(duration))
         # setting media to the media player
         self.player.set_media(media)
- 
         # Установка громкости
         self.player.audio_set_volume(int(volume * 100))
-
         # Проигрывание аудио
         self.player.play()
-
+        time.sleep(duration / 1000 + 0.5)
+        self.logger.debug("Stop on duration " + full_path)
         # Ждем завершения проигрывания
         while self.player.is_playing():
             continue
-        
-        self.logger.debug("Stop play "+full_path)
+
+        self.logger.debug("Stop play " + full_path)
 
         if not self.queue.empty():
             self.play_audio_vlc(volume)
-        
+
         # Освобождение ресурсов плеера
-        #player.release()
+        # player.release()
         self.is_playing = False
 
     def play_audio_cmd(self, cmnd):
@@ -95,7 +98,7 @@ class Player(BasePlugin):
             self.is_playing = True
             app_dir = self._app.config["APP_DIR"]
             filePath = self.queue.get()
-            filePath=os.path.join(app_dir,filePath)
+            filePath = os.path.join(app_dir,filePath)
             self.logger.debug("Start play %s", filePath)
             cmd = cmnd.split()
             cmd.append(filePath)
@@ -106,9 +109,5 @@ class Player(BasePlugin):
 
         if not self.queue.empty():
             self.play_audio_cmd(cmnd)
-        
+
         self.is_playing = False
-
-
-
-        
