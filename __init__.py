@@ -17,9 +17,9 @@ class Player(BasePlugin):
         self.version = "0.1a"
         self.actions = ["playsound"]
         self.is_playing = False
+        self.queue = queue.Queue()
 
     def initialization(self):
-        self.queue = queue.Queue()
         # Инициализация плеера VLC
         self.player = vlc.MediaPlayer()
 
@@ -38,7 +38,7 @@ class Player(BasePlugin):
         }
         return self.render('main_player.html', content)
 
-    def playSound(self, file_name:str, level:int=0):
+    def playSound(self, file_name:str, level:int=0, args=None):
         propertyMinLevel = self.config.get('propertyMinLevel','')
         minLevel = 0
         if propertyMinLevel:
