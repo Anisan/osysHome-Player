@@ -58,33 +58,36 @@ class Player(BasePlugin):
     # TODO перенести в цикл для обработки очереди проигрывания
     # TODO приоритетную очередь
     def play_audio_vlc(self, volume=1.0):
-        self.is_playing = True
+        try:
+            self.is_playing = True
 
-        app_dir = self._app.config["APP_DIR"]
-        file_path = self.queue.get()
-        full_path = os.path.join(app_dir,file_path)
-        self.logger.debug("Start play " + full_path)
+            app_dir = self._app.config["APP_DIR"]
+            file_path = self.queue.get()
+            full_path = os.path.join(app_dir,file_path)
+            self.logger.debug("Start play " + full_path)
 
-        # media object
-        media = vlc.Media(full_path)
-        media.parse()
-        duration = media.get_duration()
-        if duration <= 0:
-            duration = 1000
-        self.logger.debug("Duration " + str(duration))
-        # setting media to the media player
-        self.player.set_media(media)
-        # Установка громкости
-        self.player.audio_set_volume(int(volume * 100))
-        # Проигрывание аудио
-        self.player.play()
-        time.sleep(duration / 1000 + 0.5)
-        self.logger.debug("Stop on duration " + full_path)
-        # Ждем завершения проигрывания
-        while self.player.is_playing():
-            continue
+            # media object
+            media = vlc.Media(full_path)
+            media.parse()
+            duration = media.get_duration()
+            if duration <= 0:
+                duration = 1000
+            self.logger.debug("Duration " + str(duration))
+            # setting media to the media player
+            self.player.set_media(media)
+            # Установка громкости
+            self.player.audio_set_volume(int(volume * 100))
+            # Проигрывание аудио
+            self.player.play()
+            time.sleep(duration / 1000 + 0.5)
+            self.logger.debug("Stop on duration " + full_path)
+            # Ждем завершения проигрывания
+            while self.player.is_playing():
+                continue
 
-        self.logger.debug("Stop play " + full_path)
+            self.logger.debug("Stop play " + full_path)
+        except Exception as e:
+            self.logger.exception(e)
 
         if not self.queue.empty():
             self.play_audio_vlc(volume)
