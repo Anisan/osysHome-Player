@@ -2,6 +2,7 @@ import os
 import vlc
 import subprocess
 import time
+import threading
 from app.core.main.BasePlugin import BasePlugin
 import queue
 from plugins.Player.forms.SettingForms import SettingsForm
@@ -47,27 +48,43 @@ class Player(BasePlugin):
                 minLevel = int(value)
         if level < minLevel:
             return
+
+        # Добавление звука в очередь
+        self.logger.debug("Add sound to queue " + file_name)
         self.queue.put(file_name)
-        cmnd = self.config.get('command','')
-        if not self.is_playing:
-            if cmnd:
-                self.play_audio_cmd(cmnd)
-            else:
-                self.play_audio_vlc(volume=0.95)
+        
+        # Запуск потока проигрывания, если он не запущен
+        if not hasattr(self, '_playback_thread') or not self._playback_thread.is_alive():
+            self.logger.debug("Create thread playback")
+            self._playback_thread = threading.Thread(
+                target=self._playback_worker,
+                daemon=True
+            )
+            self._playback_thread.start()
 
-    # TODO перенести в цикл для обработки очереди проигрывания
-    # TODO приоритетную очередь
-    def play_audio_vlc(self, volume=1.0):
-        try:
-            self.is_playing = True
-
-            app_dir = self._app.config["APP_DIR"]
+    def _playback_worker(self):
+        """Рабочая функция потока для проигрывания звуков из очереди."""
+        self.is_playing = True
+        while not self.queue.empty():
             file_path = self.queue.get()
-            full_path = os.path.join(app_dir,file_path)
-            self.logger.debug("Start play " + full_path)
+            app_dir = self._app.config["APP_DIR"]
+            file_path = os.path.join(app_dir,file_path)
+            self.logger.debug("Start play " + file_path)
+            cmnd = self.config.get('command', '')
+            if cmnd:
+                self.play_audio_cmd(file_path, cmnd)
+            else:
+                self.play_audio_vlc(file_path, volume=0.95)
+            self.logger.debug("End play %s", file_path)
+            self.queue.task_done()
+        self.logger.debug("Empty queue sounds")
+        # Сбрасываем флаг is_playing, когда очередь пуста
+        self.is_playing = False
 
+    def play_audio_vlc(self, file_path, volume=1.0):
+        try:
             # media object
-            media = vlc.Media(full_path)
+            media = vlc.Media(file_path)
             media.parse()
             duration = media.get_duration()
             if duration <= 0:
@@ -80,37 +97,21 @@ class Player(BasePlugin):
             # Проигрывание аудио
             self.player.play()
             time.sleep(duration / 1000 + 0.5)
-            self.logger.debug("Stop on duration " + full_path)
+            self.logger.debug("Stop on duration " + file_path)
             # Ждем завершения проигрывания
             while self.player.is_playing():
                 continue
 
-            self.logger.debug("Stop play " + full_path)
         except Exception as e:
             self.logger.exception(e)
-
-        if not self.queue.empty():
-            self.play_audio_vlc(volume)
 
         # Освобождение ресурсов плеера
         # player.release()
-        self.is_playing = False
 
-    def play_audio_cmd(self, cmnd):
+    def play_audio_cmd(self, file_path, cmnd):
         try:
-            self.is_playing = True
-            app_dir = self._app.config["APP_DIR"]
-            filePath = self.queue.get()
-            filePath = os.path.join(app_dir,filePath)
-            self.logger.debug("Start play %s", filePath)
             cmd = cmnd.split()
-            cmd.append(filePath)
+            cmd.append(file_path)
             subprocess.run(cmd, check=True)
-            self.logger.debug("End play %s", filePath)
         except Exception as e:
             self.logger.exception(e)
-
-        if not self.queue.empty():
-            self.play_audio_cmd(cmnd)
-
-        self.is_playing = False
