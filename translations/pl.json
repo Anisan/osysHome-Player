@@ -1,14 +1,14 @@
 {
-  "Player": "Player",
-  "Method": "Method",
-  "Property volume": "Property volume",
+  "Player": "Odtwarzacz",
+  "Method": "Metoda",
+  "Property volume": "Właściwość głośności",
   "Auto": "Auto",
   "WinMediaPlayer (Windows)": "WinMediaPlayer (Windows)",
   "PulseAudio (Linux)": "PulseAudio (Linux)",
   "GStreamer (Linux)": "GStreamer (Linux)",
   "VLC": "VLC",
   "FFplay": "FFplay",
-  "Command": "Command",
-  "Volume": "Volume",
-  "Min level": "Min level"
+  "Command": "Polecenie",
+  "Volume": "Głośność",
+  "Min level": "Min. poziom"
 }

@@ -1,12 +1,11 @@
 import os
-import vlc
-import subprocess
-import time
 import threading
 from app.core.main.BasePlugin import BasePlugin
 import queue
 from plugins.Player.forms.SettingForms import SettingsForm
+from plugins.Player.backends import get_backend
 from app.core.lib.object import getProperty
+
 
 class Player(BasePlugin):
 
@@ -15,45 +14,71 @@ class Player(BasePlugin):
         self.title = "Player"
         self.description = """This is a plugin play sound"""
         self.category = "App"
-        self.version = "0.1a"
+        self.version = "0.2"
         self.actions = ["playsound"]
         self.is_playing = False
         self.queue = queue.Queue()
+        self._backend = None
 
     def initialization(self):
-        # Инициализация плеера VLC
-        self.player = vlc.MediaPlayer()
+        self._backend = None
 
     def admin(self, request):
         settings = SettingsForm()
         if request.method == 'GET':
+            settings.backend.data = self.config.get('backend', 'auto')
             settings.command.data = self.config.get('command','')
-            settings.propertyMinLevel.data = self.config.get('propertyMinLevel','')
+            settings.minlevel_object.data = self.config.get('minlevel_object','')
+            settings.minlevel_property.data = self.config.get('minlevel_property','')
+            settings.volume_object.data = self.config.get('volume_object','')
+            settings.volume_property.data = self.config.get('volume_property','')
         else:
             if settings.validate_on_submit():
+                self.config["backend"] = settings.backend.data
                 self.config["command"] = settings.command.data
-                self.config["propertyMinLevel"] = settings.propertyMinLevel.data
+                self.config["minlevel_object"] = settings.minlevel_object.data
+                self.config["minlevel_property"] = settings.minlevel_property.data
+                self.config["volume_object"] = settings.volume_object.data
+                self.config["volume_property"] = settings.volume_property.data
+                self._backend = None
                 self.saveConfig()
         content = {
             "form": settings,
         }
         return self.render('main_player.html', content)
 
-    def playSound(self, file_name:str, level:int=0, args=None):
-        propertyMinLevel = self.config.get('propertyMinLevel','')
-        minLevel = 0
-        if propertyMinLevel:
-            value = getProperty(propertyMinLevel)
+    def _get_volume(self):
+        obj = self.config.get('volume_object', '')
+        prop = self.config.get('volume_property', '')
+        if not obj or not prop:
+            return 0.8
+        try:
+            value = getProperty(f"{obj}.{prop}")
             if value:
-                minLevel = int(value)
+                return max(0.0, min(1.0, float(value) / 100.0))
+        except Exception:
+            pass
+        return 0.8
+
+    def _get_minlevel(self):
+        obj = self.config.get('minlevel_object', '')
+        prop = self.config.get('minlevel_property', '')
+        if not obj or not prop:
+            return 0
+        try:
+            value = getProperty(f"{obj}.{prop}")
+            if value:
+                return int(value)
+        except Exception:
+            pass
+        return 0
+
+    def playSound(self, file_name:str, level:int=0, args=None):
+        minLevel = self._get_minlevel()
         if level < minLevel:
             return
-
-        # Добавление звука в очередь
-        self.logger.debug("Add sound to queue " + file_name)
         self.queue.put(file_name)
-        
-        # Запуск потока проигрывания, если он не запущен
+
         if not hasattr(self, '_playback_thread') or not self._playback_thread.is_alive():
             self.logger.debug("Create thread playback")
             self._playback_thread = threading.Thread(
@@ -63,55 +88,29 @@ class Player(BasePlugin):
             self._playback_thread.start()
 
     def _playback_worker(self):
-        """Рабочая функция потока для проигрывания звуков из очереди."""
         self.is_playing = True
+
+        if self._backend is None:
+            self._backend = get_backend(self.config)
+
+        if self._backend is None:
+            self.logger.error("No audio backend available, skipping playback")
+            self.is_playing = False
+            return
+
+        self.logger.info("Using backend: %s", self._backend.name)
+
         while not self.queue.empty():
             file_path = self.queue.get()
             app_dir = self._app.config["APP_DIR"]
-            file_path = os.path.join(app_dir,file_path)
+            file_path = os.path.join(app_dir, file_path)
             self.logger.debug("Start play " + file_path)
-            cmnd = self.config.get('command', '')
-            if cmnd:
-                self.play_audio_cmd(file_path, cmnd)
-            else:
-                self.play_audio_vlc(file_path, volume=0.95)
+
+            volume = self._get_volume()
+            self._backend.play(file_path, volume)
+
             self.logger.debug("End play %s", file_path)
             self.queue.task_done()
+
         self.logger.debug("Empty queue sounds")
-        # Сбрасываем флаг is_playing, когда очередь пуста
         self.is_playing = False
-
-    def play_audio_vlc(self, file_path, volume=1.0):
-        try:
-            # media object
-            media = vlc.Media(file_path)
-            media.parse()
-            duration = media.get_duration()
-            if duration <= 0:
-                duration = 1000
-            self.logger.debug("Duration " + str(duration))
-            # setting media to the media player
-            self.player.set_media(media)
-            # Установка громкости
-            self.player.audio_set_volume(int(volume * 100))
-            # Проигрывание аудио
-            self.player.play()
-            time.sleep(duration / 1000 + 0.5)
-            self.logger.debug("Stop on duration " + file_path)
-            # Ждем завершения проигрывания
-            while self.player.is_playing():
-                continue
-
-        except Exception as e:
-            self.logger.exception(e)
-
-        # Освобождение ресурсов плеера
-        # player.release()
-
-    def play_audio_cmd(self, file_path, cmnd):
-        try:
-            cmd = cmnd.split()
-            cmd.append(file_path)
-            subprocess.run(cmd, check=True)
-        except Exception as e:
-            self.logger.exception(e)

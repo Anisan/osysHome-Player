@@ -1,14 +1,14 @@
 {
-  "Player": "Player",
-  "Method": "Method",
-  "Property volume": "Property volume",
+  "Player": "玩家",
+  "Method": "方法",
+  "Property volume": "音量属性",
   "Auto": "Auto",
   "WinMediaPlayer (Windows)": "WinMediaPlayer (Windows)",
   "PulseAudio (Linux)": "PulseAudio (Linux)",
   "GStreamer (Linux)": "GStreamer (Linux)",
   "VLC": "VLC",
   "FFplay": "FFplay",
-  "Command": "Command",
-  "Volume": "Volume",
-  "Min level": "Min level"
+  "Command": "命令",
+  "Volume": "音量",
+  "Min level": "最低级别"
 }

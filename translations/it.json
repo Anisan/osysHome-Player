@@ -1,14 +1,14 @@
 {
-  "Player": "Player",
-  "Method": "Method",
-  "Property volume": "Property volume",
+  "Player": "Giocatore",
+  "Method": "Metodo",
+  "Property volume": "Proprietà volume",
   "Auto": "Auto",
   "WinMediaPlayer (Windows)": "WinMediaPlayer (Windows)",
   "PulseAudio (Linux)": "PulseAudio (Linux)",
   "GStreamer (Linux)": "GStreamer (Linux)",
   "VLC": "VLC",
   "FFplay": "FFplay",
-  "Command": "Command",
+  "Command": "Comando",
   "Volume": "Volume",
-  "Min level": "Min level"
+  "Min level": "Livello min"
 }

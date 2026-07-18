@@ -1,14 +1,14 @@
 {
-  "Player": "Player",
-  "Method": "Method",
-  "Property volume": "Property volume",
+  "Player": "플레이어",
+  "Method": "방법",
+  "Property volume": "볼륨 속성",
   "Auto": "Auto",
   "WinMediaPlayer (Windows)": "WinMediaPlayer (Windows)",
   "PulseAudio (Linux)": "PulseAudio (Linux)",
   "GStreamer (Linux)": "GStreamer (Linux)",
   "VLC": "VLC",
   "FFplay": "FFplay",
-  "Command": "Command",
-  "Volume": "Volume",
-  "Min level": "Min level"
+  "Command": "명령",
+  "Volume": "볼륨",
+  "Min level": "최소 레벨"
 }

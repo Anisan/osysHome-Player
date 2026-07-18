@@ -1,20 +1,48 @@
 {% extends "layouts/module_admin.html" %}
+{% from "macros/select.html" import render_linked_select %}
 
 {% block breadcrumb %}
 <li class="breadcrumb-item"><a href="Player">{{ _('Player')}}</a></li>
 {% endblock %}
 {% block module %}
+<style>
+.player-linked-row > div {
+    flex: 1;
+    min-width: 0;
+}
+</style>
 <form  method="POST">
-        <!-- Поля формы -->
         {{ form.hidden_tag() }}
         <div class="mb-3">
-            <label class="form-label">{{ _('Command') }}</label>
-            {{ form.command(class="form-control") }}
+            <label class="form-label">{{ _('Method') }}</label>
+            {{ form.backend(class="form-control") }}
+        </div>
+        <div class="mb-3" id="command-group">
+            <label class="form-label">{{ _('Command') }} <small class="text-muted">{file}, {volume}</small></label>
+            {{ form.command(class="form-control", placeholder='/usr/bin/mplayer -volume {volume} "{file}"') }}
         </div>
         <div class="mb-3">
-            <label class="form-label">{{ _('Property min level') }}</label>
-            {{ form.propertyMinLevel(class="form-control") }}
+            <label class="form-label">{{ _('Min level') }}</label>
+            <div class="d-flex gap-3 player-linked-row">
+            {{ render_linked_select(form.minlevel_object, form.minlevel_property, None) }}
+            </div>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">{{ _('Volume') }}</label>
+            <div class="d-flex gap-3 player-linked-row">
+            {{ render_linked_select(form.volume_object, form.volume_property, None) }}
+            </div>
         </div>
         <button type="submit" class="btn btn-primary">{{ _('Submit')}}</button>
 </form>
+<script>
+document.getElementById('backend').addEventListener('change', function() {
+    var cmdGroup = document.getElementById('command-group');
+    cmdGroup.style.display = this.value === 'command' ? '' : 'none';
+});
+var backend = document.getElementById('backend');
+if (backend.value !== 'command') {
+    document.getElementById('command-group').style.display = 'none';
+}
+</script>
 {% endblock %}

@@ -1,7 +1,7 @@
 {
-  "Player": "Плеер",
+  "Player": "Плеєр",
   "Method": "Метод",
-  "Property volume": "Свойство громкости",
+  "Property volume": "Властивість гучності",
   "Auto": "Auto",
   "WinMediaPlayer (Windows)": "WinMediaPlayer (Windows)",
   "PulseAudio (Linux)": "PulseAudio (Linux)",
@@ -9,6 +9,6 @@
   "VLC": "VLC",
   "FFplay": "FFplay",
   "Command": "Команда",
-  "Volume": "Громкость",
-  "Min level": "Мин. уровень"
+  "Volume": "Гучність",
+  "Min level": "Мін. рівень"
 }
